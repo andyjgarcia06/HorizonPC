@@ -6,4 +6,5 @@
 .period-select span{white-space:nowrap}
 .period-select select{appearance:none;border:0;background:transparent;color:#344357;cursor:pointer;outline:0;padding:7px 0;font-size:11px;font-weight:600}
 .period-select svg{pointer-events:none;color:#738094}
+.service-sort{margin-left:auto}
 @media(max-width:700px){.panel-heading .period-select{margin-top:11px}}
