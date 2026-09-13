@@ -1,0 +1,143 @@
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import {
+  ArrowDownLeft, ArrowUpRight, BarChart3, Bell, BriefcaseBusiness, CalendarDays, ChevronDown,
+  CircleDollarSign, FileBarChart, Home, Landmark, LogOut, Menu, Plus, Settings, ShieldCheck,
+  Sparkles, TrendingUp, Wallet, X, Zap
+} from 'lucide-react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { api, postJson, Service, Transaction, User } from './api';
+
+type Page = 'Dashboard' | 'Servicios' | 'Movimientos' | 'Reportes' | 'Configuracion';
+type DashboardData = { totals: { incomeUsd: string; expenseUsd: string; incomeCup: string; expenseCup: string; transactionCount: string }; monthly: { month: string; income: string; expense: string }[]; yearly: { year: number; income: string; expense: string }[]; recent: Transaction[]; serviceCount: number };
+type AuthValue = { user: User | null; login: (token: string, user: User) => void; logout: () => void };
+const AuthContext = createContext<AuthValue | undefined>(undefined);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth debe utilizarse dentro de AuthContext');
+  return context;
+};
+
+const usd = (value: string | number) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const cup = (value: string | number) => `${Number(value || 0).toLocaleString('es-CU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CUP`;
+const dateLabel = (value: string) => new Date(`${value.split('T')[0]}T12:00:00`).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
+
+function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
+  const [register, setRegister] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', password: '', company: 'HorizonPC' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setError(''); setLoading(true);
+    try {
+      const data = await postJson<{ token: string; user: User }>(`/auth/${register ? 'register' : 'login'}`, form);
+      onAuth(data.token, data.user);
+    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo iniciar sesión.'); } finally { setLoading(false); }
+  };
+  return <main className="auth-page">
+    <section className="auth-visual">
+      <div className="brand"><span className="brand-mark"><Zap size={20} fill="currentColor" /></span> Horizon<span>PC</span></div>
+      <div className="visual-copy"><p className="eyebrow">CONTROL FINANCIERO INTELIGENTE</p><h1>Tu negocio,<br /><em>en equilibrio.</em></h1><p>Una vista clara de cada peso y cada dólar para tomar mejores decisiones.</p></div>
+      <div className="visual-footer"><ShieldCheck size={16} /> Tus datos están protegidos con seguridad empresarial</div>
+    </section>
+    <section className="auth-form-wrap"><div className="auth-form">
+      <div className="mobile-brand brand"><span className="brand-mark"><Zap size={18} fill="currentColor" /></span> Horizon<span>PC</span></div>
+      <p className="eyebrow">BIENVENIDO A HORIZONPC</p><h2>{register ? 'Crea tu cuenta' : 'Qué bueno verte'}</h2><p className="muted">{register ? 'Empieza a organizar tus finanzas hoy.' : 'Ingresa para continuar con tu gestión financiera.'}</p>
+      {error && <div className="alert">{error}</div>}
+      <form onSubmit={submit}>
+        {register && <label>Nombre completo<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Tu nombre" /></label>}
+        {register && <label>Empresa<input value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} placeholder="Nombre de tu empresa" /></label>}
+        <label>Correo electrónico<input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="nombre@empresa.com" /></label>
+        <label>Contraseña<input type="password" required minLength={6} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 6 caracteres" /></label>
+        <button className="primary-button full" disabled={loading}>{loading ? 'Procesando…' : register ? 'Crear cuenta' : 'Iniciar sesión'} <ArrowUpRight size={17} /></button>
+      </form>
+      <p className="switch-auth">{register ? '¿Ya tienes una cuenta?' : '¿Aún no tienes una cuenta?'} <button onClick={() => { setRegister(!register); setError(''); }}> {register ? 'Inicia sesión' : 'Regístrate gratis'}</button></p>
+    </div></section>
+  </main>;
+}
+
+const navItems: { page: Page; icon: typeof Home; label: string }[] = [
+  { page: 'Dashboard', icon: Home, label: 'Dashboard' }, { page: 'Servicios', icon: BriefcaseBusiness, label: 'Servicios' },
+  { page: 'Movimientos', icon: ArrowUpRight, label: 'Movimientos' }, { page: 'Reportes', icon: FileBarChart, label: 'Reportes' }, { page: 'Configuracion', icon: Settings, label: 'Configuración' }
+];
+
+function Layout({ user, page, setPage, onLogout, children }: { user: User; page: Page; setPage: (p: Page) => void; onLogout: () => void; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return <div className="app-shell">
+    <aside className={open ? 'sidebar open' : 'sidebar'}><div className="sidebar-brand brand"><span className="brand-mark"><Zap size={19} fill="currentColor" /></span> Horizon<span>PC</span></div>
+      <div className="workspace"><div className="workspace-avatar">{user.company.slice(0, 1).toUpperCase()}</div><div><strong>{user.company}</strong><small>Cuenta principal</small></div><ChevronDown size={15} /></div>
+      <p className="nav-label">MENÚ PRINCIPAL</p><nav>{navItems.map(item => { const Icon = item.icon; return <button key={item.page} className={page === item.page ? 'nav-item active' : 'nav-item'} onClick={() => { setPage(item.page); setOpen(false); }}><Icon size={18} />{item.label}{item.page === 'Movimientos' && <span className="nav-dot" />}</button>; })}</nav>
+      <div className="sidebar-bottom"><div className="help-card"><Sparkles size={18} /><strong>Horizon insights</strong><span>Consejos para hacer crecer tu negocio.</span><button onClick={() => setPage('Reportes')}>Ver insights <ArrowUpRight size={14} /></button></div><button className="logout" onClick={onLogout}><LogOut size={17} />Cerrar sesión</button></div>
+    </aside>
+    <div className="main-area"><header className="topbar"><button className="mobile-menu" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button><div className="breadcrumb">Finanzas <span>/</span> <strong>{page}</strong></div><div className="top-actions"><button className="icon-button"><Bell size={18} /><i /></button><div className="profile"><div className="profile-avatar">{user.name.slice(0, 1).toUpperCase()}</div><div><strong>{user.name}</strong><small>Administrador</small></div><ChevronDown size={15} /></div></div></header><main className="content">{children}</main></div>
+  </div>;
+}
+
+function Dashboard({ data, loading, onAddMovement }: { data: DashboardData | null; loading: boolean; onAddMovement: () => void }) {
+  if (loading || !data) return <Loading />;
+  const totals = data.totals;
+  const profitUsd = Number(totals.incomeUsd) - Number(totals.expenseUsd);
+  const chart = data.monthly.map(item => ({ ...item, income: Number(item.income), expense: Number(item.expense) }));
+  return <><div className="page-heading"><div><p className="eyebrow">RESUMEN GENERAL</p><h1>Buenos días, revisemos tu negocio.</h1><p className="muted">Aquí tienes el pulso financiero de <strong>este periodo</strong>.</p></div><button className="primary-button" onClick={onAddMovement}><Plus size={17} /> Nuevo movimiento</button></div>
+    <div className="stat-grid">
+      <StatCard label="Ingresos totales" value={usd(totals.incomeUsd)} detail={`${cup(totals.incomeCup)} acumulado`} icon={<TrendingUp />} tone="green" />
+      <StatCard label="Gastos totales" value={usd(totals.expenseUsd)} detail={`${cup(totals.expenseCup)} acumulado`} icon={<ArrowDownLeft />} tone="orange" />
+      <StatCard label="Balance neto" value={usd(profitUsd)} detail={profitUsd >= 0 ? 'Resultado positivo' : 'Revisa tus gastos'} icon={<Wallet />} tone="blue" />
+      <StatCard label="Movimientos" value={totals.transactionCount} detail={`${data.serviceCount} servicios activos`} icon={<BarChart3 />} tone="purple" />
+    </div>
+    <div className="dashboard-grid"><section className="panel chart-panel"><div className="panel-heading"><div><h3>Flujo de caja</h3><p className="muted">Ingresos y gastos en USD · últimos 6 meses</p></div><span className="select-pill">Últimos 6 meses <ChevronDown size={14} /></span></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chart}><defs><linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#39c995" stopOpacity=".25" /><stop offset="100%" stopColor="#39c995" stopOpacity="0" /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edf0f4" /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#8b96a8', fontSize: 12 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: '#8b96a8', fontSize: 12 }} tickFormatter={(v) => `$${v / 1000}k`} /><Tooltip formatter={(value) => usd(value as number)} /><Area type="monotone" dataKey="income" stroke="#27b982" strokeWidth={2.5} fill="url(#incomeFill)" name="Ingresos" /><Area type="monotone" dataKey="expense" stroke="#f0a24b" strokeWidth={2.5} fill="none" name="Gastos" /></AreaChart></ResponsiveContainer></div><div className="legend"><span><i className="dot green" />Ingresos</span><span><i className="dot orange" />Gastos</span></div></section>
+      <section className="panel recent-panel"><div className="panel-heading"><div><h3>Actividad reciente</h3><p className="muted">Últimos movimientos</p></div><button className="text-button" onClick={onAddMovement}>Ver todos <ArrowUpRight size={14} /></button></div>{data.recent.length ? <div className="activity-list">{data.recent.map(t => <div className="activity" key={t.id}><div className={t.type === 'Ingreso' ? 'activity-icon income' : 'activity-icon expense'}>{t.type === 'Ingreso' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}</div><div className="activity-info"><strong>{t.description}</strong><small>{dateLabel(t.transactionDate)}</small></div><strong className={t.type === 'Ingreso' ? 'amount income-text' : 'amount expense-text'}>{t.type === 'Ingreso' ? '+' : '-'}{usd(t.amountUsd)}</strong></div>)}</div> : <EmptyState text="Aún no hay movimientos" />}</section>
+    </div>
+  </>;
+}
+
+function StatCard({ label, value, detail, icon, tone }: { label: string; value: string; detail: string; icon: ReactNode; tone: string }) { return <div className="stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><span className="stat-label">{label}</span><strong className="stat-value">{value}</strong><small>{detail}</small></div>; }
+function Loading() { return <div className="loading"><div className="spinner" />Cargando información…</div>; }
+function EmptyState({ text }: { text: string }) { return <div className="empty"><CircleDollarSign size={30} /><p>{text}</p></div>; }
+
+function ServicesPage({ services, reload }: { services: Service[]; reload: () => void }) {
+  const [show, setShow] = useState(false); const [editing, setEditing] = useState<Service | null>(null);
+  const [form, setForm] = useState({ name: '', description: '', category: 'Consultoría', costUsd: '', costCup: '', status: 'Activo' }); const [error, setError] = useState('');
+  const openForm = (service?: Service) => { setEditing(service || null); setForm(service ? { name: service.name, description: service.description || '', category: service.category, costUsd: String(service.costUsd), costCup: String(service.costCup), status: service.status } : { name: '', description: '', category: 'Consultoría', costUsd: '', costCup: '', status: 'Activo' }); setError(''); setShow(true); };
+  const save = async (e: FormEvent) => { e.preventDefault(); try { await api(`/services${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(form) }); setShow(false); reload(); } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar.'); } };
+  return <><div className="page-heading"><div><p className="eyebrow">CATÁLOGO</p><h1>Servicios</h1><p className="muted">Define y controla los servicios que ofrece tu negocio.</p></div><button className="primary-button" onClick={() => openForm()}><Plus size={17} /> Nuevo servicio</button></div>
+    <section className="panel table-panel"><div className="panel-heading"><div><h3>Todos los servicios</h3><p className="muted">{services.length} servicios registrados</p></div><span className="select-pill"><BriefcaseBusiness size={14} /> Catálogo activo</span></div>{services.length ? <div className="table-scroll"><table><thead><tr><th>Servicio</th><th>Categoría</th><th>Costo USD</th><th>Costo CUP</th><th>Estado</th><th /></tr></thead><tbody>{services.map(s => <tr key={s.id}><td><strong>{s.name}</strong><small>{s.description || 'Sin descripción'}</small></td><td>{s.category}</td><td>{usd(s.costUsd)}</td><td>{cup(s.costCup)}</td><td><span className={`status ${s.status === 'Activo' ? 'active' : 'inactive'}`}><i />{s.status}</span></td><td><button className="row-action" onClick={() => openForm(s)}>Editar</button></td></tr>)}</tbody></table></div> : <EmptyState text="Crea tu primer servicio para comenzar" />}</section>
+    {show && <Modal title={editing ? 'Editar servicio' : 'Nuevo servicio'} close={() => setShow(false)}><form className="modal-form" onSubmit={save}>{error && <div className="alert">{error}</div>}<label>Nombre del servicio<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ej. Soporte técnico" /></label><label>Descripción<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Describe brevemente este servicio" /></label><div className="form-row"><label>Categoría<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}><option>Consultoría</option><option>Desarrollo</option><option>Soporte técnico</option><option>Infraestructura</option><option>Seguridad</option></select></label><label>Estado<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option>Activo</option><option>Inactivo</option></select></label></div><div className="form-row"><label>Costo USD<input type="number" min="0" step=".01" value={form.costUsd} onChange={e => setForm({ ...form, costUsd: e.target.value })} placeholder="0.00" /></label><label>Costo CUP<input type="number" min="0" step=".01" value={form.costCup} onChange={e => setForm({ ...form, costCup: e.target.value })} placeholder="0.00" /></label></div><button className="primary-button full">Guardar servicio</button></form></Modal>}
+  </>;
+}
+
+function TransactionsPage({ transactions, services, reload }: { transactions: Transaction[]; services: Service[]; reload: () => void }) {
+  const [show, setShow] = useState(false); const [error, setError] = useState('');
+  const [form, setForm] = useState({ type: 'Ingreso', description: '', amountUsd: '', amountCup: '', transactionDate: new Date().toISOString().slice(0, 10), serviceId: '', notes: '' });
+  const save = async (e: FormEvent) => { e.preventDefault(); setError(''); try { await postJson('/transactions', { ...form, serviceId: form.serviceId || null }); setShow(false); setForm({ ...form, description: '', amountUsd: '', amountCup: '', notes: '' }); reload(); } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar.'); } };
+  return <><div className="page-heading"><div><p className="eyebrow">LIBRO MAYOR</p><h1>Movimientos</h1><p className="muted">Registra y consulta ingresos y gastos de tu operación.</p></div><button className="primary-button" onClick={() => setShow(true)}><Plus size={17} /> Nuevo movimiento</button></div>
+    <section className="panel table-panel"><div className="panel-heading"><div><h3>Historial de movimientos</h3><p className="muted">{transactions.length} movimientos registrados</p></div><span className="select-pill"><CalendarDays size={14} /> Todas las fechas</span></div>{transactions.length ? <div className="table-scroll"><table><thead><tr><th>Descripción</th><th>Tipo</th><th>Fecha</th><th>USD</th><th>CUP</th></tr></thead><tbody>{transactions.map(t => <tr key={t.id}><td><strong>{t.description}</strong><small>{t.serviceName || t.notes || 'Movimiento general'}</small></td><td><span className={`type-pill ${t.type === 'Ingreso' ? 'income' : 'expense'}`}>{t.type}</span></td><td>{dateLabel(t.transactionDate)}</td><td className={t.type === 'Ingreso' ? 'income-text' : 'expense-text'}>{t.type === 'Ingreso' ? '+' : '-'}{usd(t.amountUsd)}</td><td>{cup(t.amountCup)}</td></tr>)}</tbody></table></div> : <EmptyState text="Registra tu primer movimiento" />}</section>
+    {show && <Modal title="Nuevo movimiento" close={() => setShow(false)}><form className="modal-form" onSubmit={save}>{error && <div className="alert">{error}</div>}<div className="toggle-row"><button type="button" className={form.type === 'Ingreso' ? 'selected income' : ''} onClick={() => setForm({ ...form, type: 'Ingreso' })}><ArrowDownLeft size={15} /> Ingreso</button><button type="button" className={form.type === 'Gasto' ? 'selected expense' : ''} onClick={() => setForm({ ...form, type: 'Gasto' })}><ArrowUpRight size={15} /> Gasto</button></div><label>Descripción<input required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Ej. Pago de cliente" /></label><div className="form-row"><label>Monto USD<input type="number" min="0" step=".01" value={form.amountUsd} onChange={e => setForm({ ...form, amountUsd: e.target.value })} placeholder="0.00" /></label><label>Monto CUP<input type="number" min="0" step=".01" value={form.amountCup} onChange={e => setForm({ ...form, amountCup: e.target.value })} placeholder="0.00" /></label></div><div className="form-row"><label>Fecha<input type="date" required value={form.transactionDate} onChange={e => setForm({ ...form, transactionDate: e.target.value })} /></label><label>Servicio<select value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value })}><option value="">General</option>{services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div><label>Notas<textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Información adicional (opcional)" /></label><button className="primary-button full">Guardar movimiento</button></form></Modal>}
+  </>;
+}
+
+function ReportsPage({ data }: { data: DashboardData | null }) {
+  const yearly = data?.yearly || []; const pie = data ? [{ name: 'Ingresos', value: Number(data.totals.incomeUsd), color: '#39c995' }, { name: 'Gastos', value: Number(data.totals.expenseUsd), color: '#f0a24b' }] : [];
+  return <><div className="page-heading"><div><p className="eyebrow">ANÁLISIS</p><h1>Reportes</h1><p className="muted">Entiende el rendimiento de tu negocio con datos claros.</p></div><button className="secondary-button"><FileBarChart size={16} /> Exportar reporte</button></div><div className="reports-grid"><section className="panel chart-panel"><div className="panel-heading"><div><h3>Rendimiento anual</h3><p className="muted">Comparativa en USD por año</p></div></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={yearly}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edf0f4" /><XAxis dataKey="year" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} tickFormatter={v => `$${v / 1000}k`} /><Tooltip formatter={(v) => usd(v as number)} /><Bar dataKey="income" fill="#39c995" radius={[5, 5, 0, 0]} name="Ingresos" /><Bar dataKey="expense" fill="#f0a24b" radius={[5, 5, 0, 0]} name="Gastos" /></BarChart></ResponsiveContainer></div></section><section className="panel chart-panel"><div className="panel-heading"><div><h3>Distribución financiera</h3><p className="muted">Ingresos vs gastos acumulados</p></div></div><div className="pie-wrap"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pie} dataKey="value" innerRadius={70} outerRadius={105} paddingAngle={4}>{pie.map(item => <Cell key={item.name} fill={item.color} />)}</Pie><Tooltip formatter={(v) => usd(v as number)} /></PieChart></ResponsiveContainer><div className="pie-center"><strong>{usd(data?.totals.incomeUsd || 0)}</strong><span>Ingresos</span></div></div><div className="legend centered">{pie.map(item => <span key={item.name}><i className="dot" style={{ background: item.color }} />{item.name}</span>)}</div></section></div></>;
+}
+
+function SettingsPage({ user }: { user: User }) { return <><div className="page-heading"><div><p className="eyebrow">PREFERENCIAS</p><h1>Configuración</h1><p className="muted">Administra los datos de tu cuenta y empresa.</p></div></div><section className="panel settings-panel"><div className="settings-title"><div className="large-avatar">{user.name.slice(0, 1).toUpperCase()}</div><div><h3>Perfil de administrador</h3><p className="muted">Información personal de tu cuenta</p></div></div><div className="settings-form"><label>Nombre completo<input value={user.name} readOnly /></label><label>Correo electrónico<input value={user.email} readOnly /></label><label>Empresa<input value={user.company} readOnly /></label></div><div className="settings-note"><ShieldCheck size={18} /><div><strong>Cuenta segura</strong><p>Tu información financiera está protegida y solo es visible para tu organización.</p></div></div></section></>; }
+function Modal({ title, close, children }: { title: string; close: () => void; children: ReactNode }) { return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}><div className="modal"><div className="modal-header"><div><p className="eyebrow">HORIZONPC</p><h2>{title}</h2></div><button className="icon-button" onClick={close}><X size={18} /></button></div>{children}</div></div>; }
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null); const [page, setPage] = useState<Page>('Dashboard'); const [data, setData] = useState<DashboardData | null>(null); const [services, setServices] = useState<Service[]>([]); const [transactions, setTransactions] = useState<Transaction[]>([]); const [loading, setLoading] = useState(true);
+  useEffect(() => { const saved = localStorage.getItem('horizon_user'); const token = localStorage.getItem('horizon_token'); if (saved && token) setUser(JSON.parse(saved)); else setLoading(false); }, []);
+  const load = async () => { if (!user) return; setLoading(true); try { const [dashboard, serviceData, transactionData] = await Promise.all([api<DashboardData>('/dashboard'), api<{ services: Service[] }>('/services'), api<{ transactions: Transaction[] }>('/transactions')]); setData(dashboard); setServices(serviceData.services); setTransactions(transactionData.transactions); } catch { localStorage.removeItem('horizon_token'); localStorage.removeItem('horizon_user'); setUser(null); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, [user]); // Carga los datos protegidos cada vez que cambia la sesión.
+  const login = (token: string, nextUser: User) => { localStorage.setItem('horizon_token', token); localStorage.setItem('horizon_user', JSON.stringify(nextUser)); setUser(nextUser); };
+  const logout = () => { localStorage.removeItem('horizon_token'); localStorage.removeItem('horizon_user'); setUser(null); setData(null); };
+  const content = useMemo(() => {
+    if (page === 'Dashboard') return <Dashboard data={data} loading={loading} onAddMovement={() => setPage('Movimientos')} />;
+    if (page === 'Servicios') return <ServicesPage services={services} reload={load} />;
+    if (page === 'Movimientos') return <TransactionsPage transactions={transactions} services={services} reload={load} />;
+    if (page === 'Reportes') return <ReportsPage data={data} />;
+    return <SettingsPage user={user!} />;
+  }, [page, data, loading, services, transactions, user]);
+  if (!user) return <AuthPage onAuth={login} />;
+  return <AuthContext.Provider value={{ user, login, logout }}><Layout user={user} page={page} setPage={setPage} onLogout={logout}>{content}</Layout></AuthContext.Provider>;
+}

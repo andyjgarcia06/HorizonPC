@@ -1,0 +1,22 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.js';
+import serviceRoutes from './routes/services.js';
+import transactionRoutes from './routes/transactions.js';
+import dashboardRoutes from './routes/dashboard.js';
+import { notFound, errorHandler } from './middleware/errors.js';
+
+dotenv.config();
+const app = express();
+const port = Number(process.env.PORT || 4000);
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(express.json({ limit: '1mb' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'HorizonPC API' }));
+app.use('/api/auth', authRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use(notFound);
+app.use(errorHandler);
+app.listen(port, () => console.log(`HorizonPC API escuchando en http://localhost:${port}`));
