@@ -51,4 +51,23 @@ router.get('/me', authRequired, async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+router.patch('/password', authRequired, [
+  body('currentPassword').notEmpty().withMessage('Ingresa tu contraseña actual.'),
+  body('newPassword').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres.')
+], validate, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id=$1', [req.user.id]);
+    const user = rows[0];
+    if (!user || !(await bcrypt.compare(req.body.currentPassword, user.password_hash))) {
+      return res.status(401).json({ message: 'La contraseña actual no es correcta.' });
+    }
+    if (req.body.currentPassword === req.body.newPassword) {
+      return res.status(400).json({ message: 'La nueva contraseña debe ser diferente.' });
+    }
+    const passwordHash = await bcrypt.hash(req.body.newPassword, 12);
+    await pool.query('UPDATE users SET password_hash=$1 WHERE id=$2', [passwordHash, req.user.id]);
+    res.json({ message: 'Contraseña actualizada correctamente.' });
+  } catch (error) { next(error); }
+});
+
 export default router;
