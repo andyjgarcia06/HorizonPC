@@ -35,5 +35,12 @@
 .rate-input input{flex:1;border:0;outline:0;padding:12px 0;color:var(--ink);min-width:0}
 .rate-input strong{padding-right:13px;color:#344357;font-size:12px}
 .exchange-form .primary-button{margin-top:18px}
+.conversion-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:-8px 0 18px}
+.conversion-summary>div{background:#fff;border:1px solid var(--line);border-radius:9px;padding:15px}
+.conversion-summary span,.conversion-summary small{display:block;color:#8793a3;font-size:11px}
+.conversion-summary strong{display:block;color:#1c2b3d;font:700 18px Manrope,sans-serif;margin:7px 0 4px}
+.conversion-summary small{font-size:10px;color:#a0aab6}
 @media(max-width:700px){.panel-heading .period-select{margin-top:11px}}
 @media(max-width:700px){.settings-grid{grid-template-columns:1fr}}
+@media(max-width:1050px){.conversion-summary{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.conversion-summary{grid-template-columns:1fr}}
