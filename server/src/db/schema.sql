@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Permite conservar la tasa de cambio definida por cada cuenta.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS exchange_rate_cup NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (exchange_rate_cup >= 0);
+
 CREATE TABLE IF NOT EXISTS services (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

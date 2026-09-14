@@ -51,6 +51,25 @@ router.get('/me', authRequired, async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+router.get('/exchange-rate', authRequired, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT exchange_rate_cup AS "exchangeRateCup" FROM users WHERE id=$1', [req.user.id]);
+    if (!rows[0]) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    res.json({ exchangeRateCup: rows[0].exchangeRateCup });
+  } catch (error) { next(error); }
+});
+
+router.patch('/exchange-rate', authRequired, [
+  body('exchangeRateCup').isFloat({ min: 0.01 }).withMessage('La tasa debe ser mayor que cero.')
+], validate, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(`UPDATE users SET exchange_rate_cup=$1 WHERE id=$2
+      RETURNING exchange_rate_cup AS "exchangeRateCup"`, [Number(req.body.exchangeRateCup), req.user.id]);
+    if (!rows[0]) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    res.json({ exchangeRateCup: rows[0].exchangeRateCup, message: 'Tasa de cambio actualizada correctamente.' });
+  } catch (error) { next(error); }
+});
+
 router.patch('/password', authRequired, [
   body('currentPassword').notEmpty().withMessage('Ingresa tu contraseña actual.'),
   body('newPassword').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres.')

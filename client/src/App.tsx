@@ -8,7 +8,7 @@ import {
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, postJson, Service, Transaction, User } from './api';
 
-type Page = 'Dashboard' | 'Servicios' | 'Movimientos' | 'Reportes' | 'Configuracion';
+type Page = 'Dashboard' | 'Servicios' | 'Movimientos' | 'Reportes' | 'Configuracion' | 'TipoCambio';
 type DashboardData = { totals: { incomeUsd: string; expenseUsd: string; incomeCup: string; expenseCup: string; transactionCount: string }; monthly: { month: string; incomeUsd: string; expenseUsd: string; incomeCup: string; expenseCup: string }[]; yearly: { year: number; incomeUsd: string; expenseUsd: string; incomeCup: string; expenseCup: string }[]; recent: Transaction[]; serviceCount: number };
 type AuthValue = { user: User | null; login: (token: string, user: User) => void; logout: () => void };
 const AuthContext = createContext<AuthValue | undefined>(undefined);
@@ -58,7 +58,7 @@ function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
 
 const navItems: { page: Page; icon: typeof Home; label: string }[] = [
   { page: 'Dashboard', icon: Home, label: 'Dashboard' }, { page: 'Servicios', icon: BriefcaseBusiness, label: 'Servicios' },
-  { page: 'Movimientos', icon: ArrowUpRight, label: 'Movimientos' }, { page: 'Reportes', icon: FileBarChart, label: 'Reportes' }, { page: 'Configuracion', icon: Settings, label: 'Configuración' }
+  { page: 'Movimientos', icon: ArrowUpRight, label: 'Movimientos' }, { page: 'Reportes', icon: FileBarChart, label: 'Reportes' }, { page: 'TipoCambio', icon: Landmark, label: 'Tasa USD / CUP' }, { page: 'Configuracion', icon: Settings, label: 'Configuración' }
 ];
 
 function Layout({ user, page, setPage, onLogout, children }: { user: User; page: Page; setPage: (p: Page) => void; onLogout: () => void; children: ReactNode }) {
@@ -143,6 +143,28 @@ function ReportsPage({ data }: { data: DashboardData | null }) {
   return <><div className="page-heading"><div><p className="eyebrow">ANÁLISIS</p><h1>Reportes</h1><p className="muted">Entiende el rendimiento de tu negocio con datos claros en USD y CUP.</p></div><button className="secondary-button"><FileBarChart size={16} /> Exportar reporte</button></div><div className="reports-grid"><section className="panel chart-panel"><div className="panel-heading"><div><h3>Rendimiento anual</h3><p className="muted">Comparativa anual por moneda</p></div></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={yearly}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edf0f4" /><XAxis dataKey="year" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} /><Tooltip formatter={(v, name) => name.toString().includes('CUP') ? cup(v as number) : usd(v as number)} /><Bar dataKey="incomeUsd" fill="#39c995" radius={[5, 5, 0, 0]} name="Ingresos USD" /><Bar dataKey="expenseUsd" fill="#f0a24b" radius={[5, 5, 0, 0]} name="Gastos USD" /><Bar dataKey="incomeCup" fill="#2476d8" radius={[5, 5, 0, 0]} name="Ingresos CUP" /><Bar dataKey="expenseCup" fill="#9b59b6" radius={[5, 5, 0, 0]} name="Gastos CUP" /></BarChart></ResponsiveContainer></div></section><section className="panel chart-panel"><div className="panel-heading"><div><h3>Distribución financiera</h3><p className="muted">Ingresos vs gastos acumulados por moneda</p></div></div><div className="distribution-pies"><div><strong className="currency-heading">USD</strong>{distribution(pieUsd, usd)}<div className="legend centered">{pieUsd.map(item => <span key={item.name}><i className="dot" style={{ background: item.color }} />{item.name}</span>)}</div></div><div><strong className="currency-heading">CUP</strong>{distribution(pieCup, cup)}<div className="legend centered">{pieCup.map(item => <span key={item.name}><i className="dot" style={{ background: item.color }} />{item.name}</span>)}</div></div></div></section></div></>;
 }
 
+function ExchangeRatePage() {
+  const [rate, setRate] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    api<{ exchangeRateCup: string | number }>('/auth/exchange-rate')
+      .then(result => setRate(String(result.exchangeRateCup || '')))
+      .catch(err => setError(err instanceof Error ? err.message : 'No se pudo cargar la tasa.'))
+      .finally(() => setLoading(false));
+  }, []);
+  const save = async (event: FormEvent) => {
+    event.preventDefault(); setMessage(''); setError(''); setSaving(true);
+    try {
+      const result = await api<{ exchangeRateCup: string | number; message: string }>('/auth/exchange-rate', { method: 'PATCH', body: JSON.stringify({ exchangeRateCup: rate }) });
+      setRate(String(result.exchangeRateCup)); setMessage(result.message);
+    } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar la tasa.'); } finally { setSaving(false); }
+  };
+  return <><div className="page-heading"><div><p className="eyebrow">VALOR DE REFERENCIA</p><h1>Tasa USD / CUP</h1><p className="muted">Define el valor actual de un dólar estadounidense en pesos cubanos.</p></div></div><section className="panel exchange-panel"><div className="exchange-icon"><Landmark size={24} /></div><h2>¿Cuánto vale 1 USD?</h2><p className="muted">Esta tasa queda guardada en tu cuenta para consultarla cuando registres tus operaciones.</p>{message && <div className="success-alert">{message}</div>}{error && <div className="alert">{error}</div>}<form className="exchange-form" onSubmit={save}><label>Valor actual de 1 USD en CUP<div className="rate-input"><span>1 USD =</span><input type="number" required min="0.01" step=".01" value={rate} onChange={e => setRate(e.target.value)} placeholder="Ej. 24.00" disabled={loading} /><strong>CUP</strong></div></label><button className="primary-button" disabled={loading || saving}>{saving ? 'Guardando…' : 'Guardar tasa'}</button></form></section></>;
+}
+
 function SettingsPage({ user }: { user: User }) {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [message, setMessage] = useState(''); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
@@ -170,6 +192,7 @@ export default function App() {
     if (page === 'Servicios') return <ServicesPage services={services} reload={load} />;
     if (page === 'Movimientos') return <TransactionsPage transactions={transactions} services={services} reload={load} />;
     if (page === 'Reportes') return <ReportsPage data={data} />;
+    if (page === 'TipoCambio') return <ExchangeRatePage />;
     return <SettingsPage user={user!} />;
   }, [page, data, loading, services, transactions, user]);
   if (!user) return <AuthPage onAuth={login} />;
