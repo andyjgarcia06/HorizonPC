@@ -48,4 +48,23 @@ router.post('/', rules, validate, async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+router.patch('/:id', rules, validate, async (req, res, next) => {
+  try {
+    const { type, description, currency, amount, amountUsd = 0, amountCup = 0, transactionDate, notes = '', serviceId = null } = req.body;
+    const normalizedUsd = currency ? (currency === 'USD' ? Number(amount) : 0) : Number(amountUsd);
+    const normalizedCup = currency ? (currency === 'CUP' ? Number(amount) : 0) : Number(amountCup);
+    if (!normalizedUsd && !normalizedCup) return res.status(400).json({ message: 'Ingresa un monto en USD o CUP.' });
+    if (serviceId) {
+      const service = await pool.query('SELECT id FROM services WHERE id=$1 AND user_id=$2', [serviceId, req.user.id]);
+      if (!service.rowCount) return res.status(400).json({ message: 'El servicio seleccionado no es válido.' });
+    }
+    const { rows } = await pool.query(`UPDATE transactions SET service_id=$1,type=$2,description=$3,amount_usd=$4,amount_cup=$5,
+      transaction_date=COALESCE($6::date,CURRENT_DATE),notes=$7 WHERE id=$8 AND user_id=$9
+      RETURNING id,type,description,amount_usd AS "amountUsd",amount_cup AS "amountCup",transaction_date AS "transactionDate",notes,service_id AS "serviceId"`,
+      [serviceId || null, type, description, normalizedUsd, normalizedCup, transactionDate || null, notes, req.params.id, req.user.id]);
+    if (!rows[0]) return res.status(404).json({ message: 'Movimiento no encontrado.' });
+    res.json({ transaction: rows[0] });
+  } catch (error) { next(error); }
+});
+
 export default router;
