@@ -44,6 +44,106 @@
 @media(max-width:700px){.settings-grid{grid-template-columns:1fr}}
 @media(max-width:1050px){.conversion-summary{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.conversion-summary{grid-template-columns:1fr}}
+.theme-dark{--ink:#e8eef5;--muted:#9aa9ba;--line:#2b3a4d;--navy:#091523;background:#101b29;color:var(--ink);min-height:100vh}
+.theme-dark .main-area,.theme-dark .content{background:#101b29}
+.theme-dark .topbar,.theme-dark .panel,.theme-dark .stat-card,.theme-dark .secondary-button,.theme-dark .period-select,.theme-dark .profile-dropdown,.theme-dark .rate-input,.theme-dark .month-filter input{background:#172536;border-color:#2b3a4d;color:#dce6ef}
+.theme-dark .topbar{border-color:#2b3a4d}
+.theme-dark .breadcrumb strong,.theme-dark .panel-heading h3,.theme-dark .stat-value,.theme-dark .profile strong,.theme-dark .settings-title h3,.theme-dark .exchange-panel h2,.theme-dark .rate-input strong{color:#e8eef5}
+.theme-dark .muted,.theme-dark .stat-label,.theme-dark .stat-card small,.theme-dark .activity-info small,.theme-dark .conversion-summary span,.theme-dark .conversion-summary small{color:#9aa9ba}
+.theme-dark .auth-form input,.theme-dark .modal-form input,.theme-dark .modal-form textarea,.theme-dark .modal-form select,.theme-dark .settings-form input{background:#172536;border-color:#34475d;color:#e8eef5}
+.theme-dark .profile-trigger:hover,.theme-dark .profile-trigger[aria-expanded="true"]{background:#22354a}
+.theme-dark .profile-dropdown-info{border-color:#2b3a4d}
+.theme-dark .settings-note{background:#17352f;border-color:#28604f}
+.theme-dark .conversion-summary>div{background:#172536;border-color:#2b3a4d}
+.theme-dark .theme-option{background:#172536;border-color:#34475d;color:#cbd8e5}
+.theme-dark .theme-option.selected{background:#1b4b3d;border-color:#38c994;color:#68ddb0}
+.theme-dark .page-heading h1{color:#e8eef5}
+.theme-dark .dashboard-grid .chart-panel,.theme-dark .dashboard-grid .recent-panel{background:#172536;border-color:#2b3a4d}
+.theme-dark .dashboard-grid .panel-heading h3{color:#e8eef5}
+.theme-dark .dashboard-grid .select-pill{background:#1d3044;border-color:#34475d;color:#b8c7d6}
+.theme-dark .dashboard-grid .select-pill select{color:#e8eef5}
+.theme-dark .dashboard-grid .chart-wrap .recharts-cartesian-grid-horizontal line{stroke:#2b3a4d}
+.theme-dark .dashboard-grid .chart-wrap .recharts-text{fill:#9aa9ba}
+.theme-dark .dashboard-grid .chart-wrap .recharts-tooltip-wrapper .recharts-default-tooltip{background:#1d3044!important;border:1px solid #34475d!important;color:#e8eef5}
+.theme-dark .dashboard-grid .chart-wrap .recharts-tooltip-wrapper .recharts-tooltip-label{color:#e8eef5}
+.theme-dark .dashboard-grid .legend span{color:#b8c7d6}
+.theme-dark .dashboard-grid .activity{border-color:#2b3a4d}
+.theme-dark .dashboard-grid .activity-info strong{color:#e8eef5}
+.theme-dark .dashboard-grid .activity-info small{color:#9aa9ba}
+.theme-dark .dashboard-grid .activity-icon.income{background:#173d35;color:#55d5a6}
+.theme-dark .dashboard-grid .activity-icon.expense{background:#493622;color:#f0ad58}
+.theme-dark .page-heading h1{color:#e8eef5}
+.theme-dark .table-panel{background:#172536;border-color:#2b3a4d}
+.theme-dark .table-panel .panel-heading h3{color:#e8eef5}
+.theme-dark .table-panel .panel-heading .muted{color:#9aa9ba}
+.theme-dark .service-sort{background:#1d3044;border-color:#34475d;color:#b8c7d6}
+.theme-dark .service-sort select{color:#e8eef5}
+.theme-dark .table-scroll table th{color:#9aa9ba;border-color:#2b3a4d}
+.theme-dark .table-scroll table td{color:#dce6ef;border-color:#2b3a4d}
+.theme-dark .table-scroll table tr:hover{background:#1d3044}
+.theme-dark .table-scroll table td small{color:#9aa9ba}
+.theme-dark .status.active{background:#173d35;color:#55d5a6}
+.theme-dark .status.inactive{background:#493622;color:#f0ad58}
+.theme-dark .row-action{background:#1d3044;border-color:#34475d;color:#b8c7d6}
+.theme-dark .row-action:hover{background:#29415a;color:#e8eef5}
+.theme-dark .modal-backdrop{background:#07111dcc}
+.theme-dark .modal{background:#172536;border-color:#2b3a4d}
+.theme-dark .modal h2,.theme-dark .modal-form label{color:#e8eef5}
+.theme-dark .modal-form input,.theme-dark .modal-form textarea,.theme-dark .modal-form select{background:#1d3044;border-color:#34475d;color:#e8eef5}
+.theme-dark .modal-form input::placeholder,.theme-dark .modal-form textarea::placeholder{color:#8395a8}
+.theme-dark .modal-form .toggle-row button{border-color:#34475d;color:#b8c7d6}
+.theme-dark .modal-form .toggle-row button.selected{color:#e8eef5}
+.theme-dark .month-filter{color:#b8c7d6}
+.theme-dark .month-filter input{background:#1d3044;border-color:#34475d;color:#e8eef5}
+.theme-dark .clear-filter{color:#55d5a6}
+.theme-dark .clear-filter:disabled{color:#6f8194}
+.theme-dark .table-panel .type-pill.income{background:#173d35;color:#55d5a6}
+.theme-dark .table-panel .type-pill.expense{background:#493622;color:#f0ad58}
+.theme-dark .table-panel .income-text{color:#55d5a6}
+.theme-dark .table-panel .expense-text{color:#f0ad58}
+.theme-dark .table-panel .empty{color:#9aa9ba}
+.theme-dark .conversion-summary>div{background:#172536;border-color:#2b3a4d}
+.theme-dark .conversion-summary span,.theme-dark .conversion-summary small{color:#9aa9ba}
+.theme-dark .conversion-summary strong{color:#e8eef5}
+.theme-dark .reports-grid .chart-panel{background:#172536;border-color:#2b3a4d}
+.theme-dark .reports-grid .panel-heading h3{color:#e8eef5}
+.theme-dark .reports-grid .panel-heading .muted{color:#9aa9ba}
+.theme-dark .reports-grid .chart-wrap .recharts-cartesian-grid-horizontal line{stroke:#2b3a4d}
+.theme-dark .reports-grid .chart-wrap .recharts-text{fill:#9aa9ba}
+.theme-dark .reports-grid .chart-wrap .recharts-tooltip-wrapper .recharts-default-tooltip{background:#1d3044!important;border:1px solid #34475d!important;color:#e8eef5}
+.theme-dark .reports-grid .chart-wrap .recharts-tooltip-wrapper .recharts-tooltip-label{color:#e8eef5}
+.theme-dark .reports-grid .legend span{color:#b8c7d6}
+.theme-dark .currency-heading{color:#e8eef5}
+.theme-dark .pie-center strong{color:#e8eef5}
+.theme-dark .pie-center span{color:#9aa9ba}
+.theme-dark .exchange-panel{background:#172536;border-color:#2b3a4d}
+.theme-dark .exchange-panel h2{color:#e8eef5}
+.theme-dark .exchange-panel>.muted{color:#9aa9ba}
+.theme-dark .exchange-icon{background:#1d3855;color:#76a9ed}
+.theme-dark .exchange-form label{color:#cbd8e5}
+.theme-dark .rate-input{background:#1d3044;border-color:#34475d;color:#b8c7d6}
+.theme-dark .rate-input input{background:transparent;color:#e8eef5}
+.theme-dark .rate-input input::placeholder{color:#8395a8}
+.theme-dark .rate-input strong{color:#e8eef5}
+.theme-dark .settings-grid .settings-panel{background:#172536;border-color:#2b3a4d}
+.theme-dark .settings-grid .settings-title h3{color:#e8eef5}
+.theme-dark .settings-grid .settings-title .muted{color:#9aa9ba}
+.theme-dark .settings-grid .settings-form label{color:#cbd8e5}
+.theme-dark .settings-grid .settings-form input{background:#1d3044;border-color:#34475d;color:#e8eef5}
+.theme-dark .settings-grid .settings-form input[readonly]{color:#b8c7d6}
+.theme-dark .settings-grid .settings-note{background:#173d35;border-color:#28604f;color:#b8e6d2}
+.theme-dark .settings-grid .settings-note strong{color:#d8f5e7}
+.theme-dark .settings-grid .settings-note p{color:#9dd0bb}
+.theme-dark .settings-grid .settings-icon{background:#1d3855;color:#76a9ed}
+.theme-dark .settings-grid .theme-option{background:#1d3044;border-color:#34475d;color:#cbd8e5}
+.theme-dark .settings-grid .theme-option:hover{border-color:#55d5a6}
+.theme-dark .settings-grid .theme-option.selected{background:#1b4b3d;border-color:#38c994;color:#68ddb0}
+.theme-dark .settings-grid .success-alert{background:#173d35;border-color:#28604f;color:#68ddb0}
+.theme-dark .settings-grid .alert{background:#49302d;border-color:#76423e;color:#ffaca5}
+.theme-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:24px}
+.theme-option{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #dce2e9;background:#fff;color:#536274;border-radius:8px;padding:12px;font-size:12px;font-weight:600}
+.theme-option:hover{border-color:#3ac896}
+.theme-option.selected{background:#e8f8f2;border-color:#28bd87;color:#16835e}
 @media print{
   @page{size:A4;margin:14mm}
   body{background:#fff}
