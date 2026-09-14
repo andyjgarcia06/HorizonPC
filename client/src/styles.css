@@ -44,3 +44,14 @@
 @media(max-width:700px){.settings-grid{grid-template-columns:1fr}}
 @media(max-width:1050px){.conversion-summary{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.conversion-summary{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff}
+  .sidebar,.topbar,.no-print{display:none!important}
+  .app-shell,.main-area{display:block;min-height:0}
+  .content{padding:0;max-width:none}
+  .report-heading{margin-bottom:18px}
+  .reports-grid{grid-template-columns:1fr 1fr;gap:14px}
+  .panel,.conversion-summary>div{break-inside:avoid;box-shadow:none}
+  .chart-wrap{height:230px}
+}
