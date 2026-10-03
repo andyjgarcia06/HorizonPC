@@ -11,7 +11,7 @@ Plataforma full-stack en español para administrar las finanzas de una empresa d
 ## Requisitos
 
 - Node.js 18+
-- PostgreSQL 14+ (base de datos `horizonPC`)
+- PostgreSQL 14+ (base de datos `postgres`)
 
 El usuario PostgreSQL por defecto es `postgres` y la contraseña de desarrollo es `horizonpc`. Puedes cambiar cualquier valor mediante variables de entorno.
 
