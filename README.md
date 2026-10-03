@@ -55,4 +55,3 @@ client/src/       Aplicación React, contexto de sesión en localStorage, vistas
 server/src/       API Express, rutas, middleware y conexión PostgreSQL
 server/src/db/    Esquema SQL e inicialización
 ```
-"esto es un cambio bobo"
