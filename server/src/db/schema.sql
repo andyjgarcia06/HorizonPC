@@ -35,5 +35,10 @@ CREATE TABLE IF NOT EXISTS transactions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Block direct Data API access; the application accesses these tables through its authenticated backend.
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
 CREATE INDEX IF NOT EXISTS services_user_idx ON services(user_id);
 CREATE INDEX IF NOT EXISTS transactions_user_date_idx ON transactions(user_id, transaction_date DESC);

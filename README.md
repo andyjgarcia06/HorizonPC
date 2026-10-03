@@ -11,9 +11,9 @@ Plataforma full-stack en español para administrar las finanzas de una empresa d
 ## Requisitos
 
 - Node.js 18+
-- PostgreSQL 14+ (base de datos `postgres`)
+- PostgreSQL 14+; también es compatible con Supabase PostgreSQL.
 
-El usuario PostgreSQL por defecto es `postgres` y la contraseña de desarrollo es `horizonpc`. Puedes cambiar cualquier valor mediante variables de entorno.
+La conexión se configura en `server/.env`. Para este despliegue se usa el pooler compartido de Supabase en modo transacción (compatible con redes IPv4): host, puerto y usuario están incluidos en `server/.env.example`. Sustituye `YOUR-PASSWORD` en `DATABASE_URL` por la contraseña actual de la base de datos (codifica caracteres especiales para URL), y descarga el certificado raíz del proyecto desde Supabase Dashboard > Database > Settings > SSL Configuration. Guárdalo como `server/certs/prod-ca-2021.crt` y conserva `DB_SSL=true` y `DB_SSL_CA=certs/prod-ca-2021.crt`. No guardes la URL real con contraseña en archivos versionados ni en variables del frontend.
 
 ## Instalación y ejecución
 
@@ -38,6 +38,8 @@ npm start
 ```
 
 `DATABASE_URL` tiene prioridad sobre las variables individuales (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`). Cambia `JWT_SECRET` y `CLIENT_URL` antes de desplegar.
+
+El backend activa TLS y verifica el certificado raíz indicado por `DB_SSL_CA` para Supabase. En el pooler compartido, el puerto `6543` es modo transacción; esta API usa consultas independientes y no utiliza sentencias preparadas con nombre. Copia exactamente host y usuario que aparecen en Supabase > Connect; no reutilices el host ni el usuario de la conexión directa.
 
 ## API principal
 
