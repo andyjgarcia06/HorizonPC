@@ -36,13 +36,13 @@ function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
   };
   return <main className="auth-page">
     <section className="auth-visual">
-      <div className="brand"><span className="brand-mark"><Zap size={20} fill="currentColor" /></span> Horizon<span>PC</span></div>
+      <div className="brand"><span className="brand-mark"><Zap size={20} fill="currentColor" /></span> Horizon<span> Finanzas</span></div>
       <div className="visual-copy"><p className="eyebrow">CONTROL FINANCIERO INTELIGENTE</p><h1>Tu negocio,<br /><em>en equilibrio.</em></h1><p>Una vista clara de cada peso y cada dólar para tomar mejores decisiones.</p></div>
       <div className="visual-footer"><ShieldCheck size={16} /> Tus datos están protegidos con seguridad empresarial</div>
     </section>
     <section className="auth-form-wrap"><div className="auth-form">
-      <div className="mobile-brand brand"><span className="brand-mark"><Zap size={18} fill="currentColor" /></span> Horizon<span>PC</span></div>
-      <p className="eyebrow">BIENVENIDO A HORIZONPC</p><h2>{register ? 'Crea tu cuenta' : 'Qué bueno verte'}</h2><p className="muted">{register ? 'Empieza a organizar tus finanzas hoy.' : 'Ingresa para continuar con tu gestión financiera.'}</p>
+      <div className="mobile-brand brand"><span className="brand-mark"><Zap size={18} fill="currentColor" /></span> Horizon<span> Finanzas</span></div>
+      <p className="eyebrow">BIENVENIDO A HORIZON FINANZAS</p><h2>{register ? 'Crea tu cuenta' : 'Qué bueno verte'}</h2><p className="muted">{register ? 'Empieza a organizar tus finanzas hoy.' : 'Ingresa para continuar con tu gestión financiera.'}</p>
       {error && <div className="alert">{error}</div>}
       <form onSubmit={submit}>
         {register && <label>Nombre completo<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Tu nombre" /></label>}
@@ -64,12 +64,13 @@ const navItems: { page: Page; icon: typeof Home; label: string }[] = [
 function Layout({ user, page, setPage, onLogout, children }: { user: User; page: Page; setPage: (p: Page) => void; onLogout: () => void; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const companyName = user.company?.trim() || 'Finanzas';
   return <div className="app-shell">
-    <aside className={open ? 'sidebar open' : 'sidebar'}><div className="sidebar-brand brand"><span className="brand-mark"><Zap size={19} fill="currentColor" /></span> Horizon<span>PC</span></div>
+    <aside className={open ? 'sidebar open' : 'sidebar'}><div className="sidebar-brand brand"><span className="brand-mark"><Zap size={19} fill="currentColor" /></span> Horizon<span> Finanzas</span></div>
       <p className="nav-label">MENÚ PRINCIPAL</p><nav>{navItems.map(item => { const Icon = item.icon; return <button key={item.page} className={page === item.page ? 'nav-item active' : 'nav-item'} onClick={() => { setPage(item.page); setOpen(false); }}><Icon size={18} />{item.label}{item.page === 'Movimientos' && <span className="nav-dot" />}</button>; })}</nav>
       <div className="sidebar-bottom"><div className="help-card"><Sparkles size={18} /><strong>Horizon insights</strong><span>Consejos para hacer crecer tu negocio.</span><button onClick={() => setPage('Reportes')}>Ver insights <ArrowUpRight size={14} /></button></div></div>
     </aside>
-    <div className="main-area"><header className="topbar"><button className="mobile-menu" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button><div className="breadcrumb">Finanzas <span>/</span> <strong>{page}</strong></div><div className="top-actions"><button className="icon-button"><Bell size={18} /><i /></button><div className="profile-menu"><button className="profile profile-trigger" aria-expanded={profileOpen} onClick={() => setProfileOpen(!profileOpen)}><div className="profile-avatar">{user.name.slice(0, 1).toUpperCase()}</div><div><strong>{user.name}</strong><small>Administrador</small></div><ChevronDown size={15} /></button>{profileOpen && <div className="profile-dropdown"><div className="profile-dropdown-info"><strong>{user.name}</strong><small>{user.email}</small></div><button className="dropdown-logout" onClick={() => { setProfileOpen(false); onLogout(); }}><LogOut size={16} />Cerrar sesión</button></div>}</div></div></header><main className="content">{children}</main></div>
+    <div className="main-area"><header className="topbar"><button className="mobile-menu" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button><div className="breadcrumb">{companyName} <span>/</span> <strong>{page}</strong></div><div className="top-actions"><button className="icon-button"><Bell size={18} /><i /></button><div className="profile-menu"><button className="profile profile-trigger" aria-expanded={profileOpen} onClick={() => setProfileOpen(!profileOpen)}><div className="profile-avatar">{user.name.slice(0, 1).toUpperCase()}</div><div><strong>{user.name}</strong><small>Administrador</small></div><ChevronDown size={15} /></button>{profileOpen && <div className="profile-dropdown"><div className="profile-dropdown-info"><strong>{user.name}</strong><small>{user.email}</small></div><button className="dropdown-logout" onClick={() => { setProfileOpen(false); onLogout(); }}><LogOut size={16} />Cerrar sesión</button></div>}</div></div></header><main className="content">{children}</main></div>
   </div>;
 }
 
