@@ -1,4 +1,4 @@
-# HorizonPC Finanzas
+# Horizon Finanzas
 
 Plataforma full-stack en español para administrar las finanzas de una empresa de servicios IT. Permite registrar servicios y movimientos en **USD y CUP**, consultar indicadores mensuales/anuales y revisar reportes desde un panel responsive.
 
