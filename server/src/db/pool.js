@@ -8,12 +8,13 @@ const { Pool } = pg;
 
 // Supabase exige TLS incluso al ejecutar la aplicación en un entorno local.
 const connectionString = process.env.DATABASE_URL;
-const databaseHost = connectionString
-  ? new URL(connectionString).hostname
+const connectionUrl = connectionString ? new URL(connectionString) : null;
+const databaseHost = connectionUrl
+  ? connectionUrl.hostname
   : process.env.DB_HOST || 'localhost';
 const isSupabase = databaseHost.endsWith('.supabase.co') || databaseHost.endsWith('.pooler.supabase.com');
-const config = connectionString
-  ? { connectionString }
+const config = connectionUrl
+  ? { connectionString: connectionUrl.toString() }
   : {
       host: databaseHost,
       port: Number(process.env.DB_PORT || 5432),
@@ -21,6 +22,13 @@ const config = connectionString
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'horizonpc'
     };
+
+if (connectionUrl) {
+  for (const parameter of ['sslmode', 'sslrootcert', 'sslcert', 'sslkey']) {
+    connectionUrl.searchParams.delete(parameter);
+  }
+  config.connectionString = connectionUrl.toString();
+}
 
 if (isSupabase || process.env.DB_SSL === 'true') {
   const sslCaPath = process.env.DB_SSL_CA;
@@ -37,6 +45,11 @@ if (isSupabase || process.env.DB_SSL === 'true') {
   config.ssl = false;
 }
 
-export const pool = new Pool(config);
+export const pool = new Pool({
+  ...config,
+  max: 5,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000
+});
 
 pool.on('error', (error) => console.error('Error inesperado del pool PostgreSQL:', error));

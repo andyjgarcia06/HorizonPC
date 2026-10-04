@@ -2,18 +2,27 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
+import { rateLimit } from 'express-rate-limit';
 import { pool } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { jwtSecret } from '../config.js';
 
 const router = Router();
+const authAttemptLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Demasiados intentos. Espera 15 minutos antes de volver a intentarlo.' }
+});
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ message: errors.array()[0].msg });
   next();
 };
-const tokenFor = (user) => jwt.sign({ id: user.id, email: user.email, name: user.name }, process.env.JWT_SECRET || 'desarrollo-horizonpc', { expiresIn: '7d' });
+const tokenFor = (user) => jwt.sign({ id: user.id, email: user.email, name: user.name }, jwtSecret, { expiresIn: '7d' });
 
-router.post('/register', [
+router.post('/register', authAttemptLimiter, [
   body('name').trim().isLength({ min: 2, max: 120 }).withMessage('El nombre debe tener entre 2 y 120 caracteres.'),
   body('email').isEmail().normalizeEmail().withMessage('Ingresa un correo válido.'),
   body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.'),
@@ -30,7 +39,7 @@ router.post('/register', [
   } catch (error) { next(error); }
 });
 
-router.post('/login', [
+router.post('/login', authAttemptLimiter, [
   body('email').isEmail().normalizeEmail().withMessage('Ingresa un correo válido.'),
   body('password').notEmpty().withMessage('Ingresa tu contraseña.')
 ], validate, async (req, res, next) => {
