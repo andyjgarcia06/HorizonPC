@@ -154,11 +154,18 @@ function ServicesPage({ services, reload }: { services: Service[]; reload: () =>
 function TransactionsPage({ transactions, services, reload }: { transactions: Transaction[]; services: Service[]; reload: () => void }) {
   const [show, setShow] = useState(false); const [editing, setEditing] = useState<Transaction | null>(null); const [error, setError] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   // Cada movimiento usa una única moneda; la otra se envía como cero.
   const [form, setForm] = useState({ type: 'Ingreso', description: '', currency: 'USD', amount: '', transactionDate: new Date().toISOString().slice(0, 10), serviceId: '', notes: '' });
   const visibleTransactions = useMemo(() => selectedMonth
     ? transactions.filter(transaction => transaction.transactionDate.slice(0, 7) === selectedMonth)
     : transactions, [transactions, selectedMonth]);
+  const pageCount = Math.ceil(visibleTransactions.length / pageSize);
+  const paginatedTransactions = visibleTransactions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  useEffect(() => {
+    if (pageCount > 0 && currentPage > pageCount) setCurrentPage(pageCount);
+  }, [currentPage, pageCount]);
   const openForm = (transaction?: Transaction) => {
     setEditing(transaction || null);
     setForm(transaction ? { type: transaction.type, description: transaction.description, currency: Number(transaction.amountCup) > 0 ? 'CUP' : 'USD', amount: String(Number(transaction.amountCup) > 0 ? transaction.amountCup : transaction.amountUsd), transactionDate: transaction.transactionDate.slice(0, 10), serviceId: transaction.serviceId ? String(transaction.serviceId) : '', notes: transaction.notes || '' } : { type: 'Ingreso', description: '', currency: 'USD', amount: '', transactionDate: new Date().toISOString().slice(0, 10), serviceId: '', notes: '' });
@@ -170,11 +177,21 @@ function TransactionsPage({ transactions, services, reload }: { transactions: Tr
     try {
       const payload = { ...form, amountUsd: form.currency === 'USD' ? form.amount : 0, amountCup: form.currency === 'CUP' ? form.amount : 0, serviceId: form.serviceId || null };
       await api(`/transactions${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
-      setShow(false); setEditing(null); reload();
+      setShow(false); setEditing(null); if (!editing) setCurrentPage(1); reload();
     } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar.'); }
   };
   return <><div className="page-heading"><div><p className="eyebrow">LIBRO MAYOR</p><h1>Movimientos</h1><p className="muted">Registra y consulta ingresos y gastos de tu operación.</p></div><button className="primary-button" onClick={() => setShow(true)}><Plus size={17} /> Nuevo movimiento</button></div>
-    <section className="panel table-panel"><div className="panel-heading"><div><h3>Historial de movimientos</h3><p className="muted">{visibleTransactions.length} movimientos encontrados</p></div><div className="month-filter"><CalendarDays size={14} /><label htmlFor="movement-month">Mes</label><input id="movement-month" type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} /><button type="button" className="clear-filter" onClick={() => setSelectedMonth('')} disabled={!selectedMonth}>Todos</button></div></div>{visibleTransactions.length ? <div className="table-scroll"><table><thead><tr><th>Descripción</th><th>Tipo</th><th>Fecha</th><th>USD</th><th>CUP</th><th /></tr></thead><tbody>{visibleTransactions.map(t => <tr key={t.id}><td><strong>{t.description}</strong><small>{t.serviceName || t.notes || 'Movimiento general'}</small></td><td><span className={`type-pill ${t.type === 'Ingreso' ? 'income' : 'expense'}`}>{t.type}</span></td><td>{dateLabel(t.transactionDate)}</td><td className={t.type === 'Ingreso' ? 'income-text' : 'expense-text'}>{t.type === 'Ingreso' ? '+' : '-'}{usd(t.amountUsd)}</td><td>{cup(t.amountCup)}</td><td><button className="row-action" onClick={() => openForm(t)}>Editar</button></td></tr>)}</tbody></table></div> : <EmptyState text={selectedMonth ? 'No hay movimientos en este mes' : 'Registra tu primer movimiento'} />}</section>
+    <section className="panel table-panel"><div className="panel-heading"><div><h3>Historial de movimientos</h3><p className="muted">{visibleTransactions.length} movimientos encontrados</p></div><div className="month-filter"><CalendarDays size={14} /><label htmlFor="movement-month">Mes</label><input id="movement-month" type="month" value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setCurrentPage(1); }} /><button type="button" className="clear-filter" onClick={() => { setSelectedMonth(''); setCurrentPage(1); }} disabled={!selectedMonth}>Todos</button></div></div>{visibleTransactions.length ? <>
+      <div className="table-scroll"><table><thead><tr><th>Descripción</th><th>Tipo</th><th>Fecha</th><th>USD</th><th>CUP</th><th /></tr></thead><tbody>{paginatedTransactions.map(t => <tr key={t.id}><td><strong>{t.description}</strong><small>{t.serviceName || t.notes || 'Movimiento general'}</small></td><td><span className={`type-pill ${t.type === 'Ingreso' ? 'income' : 'expense'}`}>{t.type}</span></td><td>{dateLabel(t.transactionDate)}</td><td className={t.type === 'Ingreso' ? 'income-text' : 'expense-text'}>{t.type === 'Ingreso' ? '+' : '-'}{usd(t.amountUsd)}</td><td>{cup(t.amountCup)}</td><td><button className="row-action" onClick={() => openForm(t)}>Editar</button></td></tr>)}</tbody></table></div>
+      {pageCount > 1 && <nav className="pagination" aria-label="Paginación de movimientos">
+        <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visibleTransactions.length)} de {visibleTransactions.length}</span>
+        <div className="pagination-controls">
+          <button type="button" onClick={() => setCurrentPage(page => Math.max(1, page - 1))} disabled={currentPage === 1} aria-label="Página anterior">Anterior</button>
+          <span>Página {currentPage} de {pageCount}</span>
+          <button type="button" onClick={() => setCurrentPage(page => Math.min(pageCount, page + 1))} disabled={currentPage === pageCount} aria-label="Página siguiente">Siguiente</button>
+        </div>
+      </nav>}
+    </> : <EmptyState text={selectedMonth ? 'No hay movimientos en este mes' : 'Registra tu primer movimiento'} />}</section>
     {show && <Modal title={editing ? 'Editar movimiento' : 'Nuevo movimiento'} close={() => { setShow(false); setEditing(null); }}><form className="modal-form" onSubmit={save}>{error && <div className="alert">{error}</div>}<div className="toggle-row"><button type="button" className={form.type === 'Ingreso' ? 'selected income' : ''} onClick={() => setForm({ ...form, type: 'Ingreso' })}><ArrowDownLeft size={15} /> Ingreso</button><button type="button" className={form.type === 'Gasto' ? 'selected expense' : ''} onClick={() => setForm({ ...form, type: 'Gasto' })}><ArrowUpRight size={15} /> Gasto</button></div><label>Descripción<input required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Ej. Pago de cliente" /></label><div className="form-row"><label>Moneda cobrada<select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })}><option value="USD">USD - Dólar estadounidense</option><option value="CUP">CUP - Peso cubano</option></select></label><label>Monto {form.currency}<input required type="number" min="0.01" step=".01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" /></label></div><div className="form-row"><label>Fecha<input type="date" required value={form.transactionDate} onChange={e => setForm({ ...form, transactionDate: e.target.value })} /></label><label>Servicio<select value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value })}><option value="">General</option>{services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div><label>Notas<textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Información adicional (opcional)" /></label><button className="primary-button full">{editing ? 'Actualizar movimiento' : 'Guardar movimiento'}</button></form></Modal>}
   </>;
 }
