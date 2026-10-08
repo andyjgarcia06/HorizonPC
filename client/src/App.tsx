@@ -3,7 +3,7 @@ import type { FormEvent, ReactNode } from 'react';
 import {
   ArrowDownLeft, ArrowUpRight, BarChart3, Bell, BriefcaseBusiness, CalendarDays, ChevronDown,
   CircleDollarSign, FileBarChart, Home, Landmark, LogOut, Menu, Plus, Settings, ShieldCheck,
-  Sparkles, Sun, Moon, TrendingUp, Wallet, X, Zap
+  Sparkles, Sun, Moon, Trash2, TrendingUp, Wallet, X, Zap
 } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, postJson, Service, Transaction, User } from './api';
@@ -153,6 +153,8 @@ function ServicesPage({ services, reload }: { services: Service[]; reload: () =>
 
 function TransactionsPage({ transactions, services, reload }: { transactions: Transaction[]; services: Service[]; reload: () => void }) {
   const [show, setShow] = useState(false); const [editing, setEditing] = useState<Transaction | null>(null); const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -180,9 +182,22 @@ function TransactionsPage({ transactions, services, reload }: { transactions: Tr
       setShow(false); setEditing(null); if (!editing) setCurrentPage(1); reload();
     } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar.'); }
   };
+  const removeTransaction = async (transaction: Transaction) => {
+    if (!window.confirm(`¿Eliminar el movimiento "${transaction.description}"? Esta acción no se puede deshacer.`)) return;
+    setDeleteError('');
+    setDeletingId(transaction.id);
+    try {
+      await api(`/transactions/${transaction.id}`, { method: 'DELETE' });
+      reload();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'No se pudo eliminar el movimiento.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
   return <><div className="page-heading"><div><p className="eyebrow">LIBRO MAYOR</p><h1>Movimientos</h1><p className="muted">Registra y consulta ingresos y gastos de tu operación.</p></div><button className="primary-button" onClick={() => setShow(true)}><Plus size={17} /> Nuevo movimiento</button></div>
-    <section className="panel table-panel"><div className="panel-heading"><div><h3>Historial de movimientos</h3><p className="muted">{visibleTransactions.length} movimientos encontrados</p></div><div className="month-filter"><CalendarDays size={14} /><label htmlFor="movement-month">Mes</label><input id="movement-month" type="month" value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setCurrentPage(1); }} /><button type="button" className="clear-filter" onClick={() => { setSelectedMonth(''); setCurrentPage(1); }} disabled={!selectedMonth}>Todos</button></div></div>{visibleTransactions.length ? <>
-      <div className="table-scroll"><table><thead><tr><th>Descripción</th><th>Notas</th><th>Tipo</th><th>Fecha</th><th>USD</th><th>CUP</th><th /></tr></thead><tbody>{paginatedTransactions.map(t => <tr key={t.id}><td><strong>{t.description}</strong><small>{t.serviceName || 'Movimiento general'}</small></td><td className="movement-notes">{t.notes?.trim() || '—'}</td><td><span className={`type-pill ${t.type === 'Ingreso' ? 'income' : 'expense'}`}>{t.type}</span></td><td>{dateLabel(t.transactionDate)}</td><td className={t.type === 'Ingreso' ? 'income-text' : 'expense-text'}>{t.type === 'Ingreso' ? '+' : '-'}{usd(t.amountUsd)}</td><td>{cup(t.amountCup)}</td><td><button className="row-action" onClick={() => openForm(t)}>Editar</button></td></tr>)}</tbody></table></div>
+    <section className="panel table-panel"><div className="panel-heading"><div><h3>Historial de movimientos</h3><p className="muted">{visibleTransactions.length} movimientos encontrados</p></div><div className="month-filter"><CalendarDays size={14} /><label htmlFor="movement-month">Mes</label><input id="movement-month" type="month" value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setCurrentPage(1); }} /><button type="button" className="clear-filter" onClick={() => { setSelectedMonth(''); setCurrentPage(1); }} disabled={!selectedMonth}>Todos</button></div></div>{deleteError && <div className="alert" role="alert">{deleteError}</div>}{visibleTransactions.length ? <>
+      <div className="table-scroll"><table><thead><tr><th>Descripción</th><th>Notas</th><th>Tipo</th><th>Fecha</th><th>USD</th><th>CUP</th><th>Acciones</th></tr></thead><tbody>{paginatedTransactions.map(t => <tr key={t.id}><td><strong>{t.description}</strong><small>{t.serviceName || 'Movimiento general'}</small></td><td className="movement-notes">{t.notes?.trim() || '—'}</td><td><span className={`type-pill ${t.type === 'Ingreso' ? 'income' : 'expense'}`}>{t.type}</span></td><td>{dateLabel(t.transactionDate)}</td><td className={t.type === 'Ingreso' ? 'income-text' : 'expense-text'}>{t.type === 'Ingreso' ? '+' : '-'}{usd(t.amountUsd)}</td><td>{cup(t.amountCup)}</td><td><div className="movement-actions"><button className="row-action" onClick={() => openForm(t)}>Editar</button><button className="row-action delete-action" onClick={() => removeTransaction(t)} disabled={deletingId !== null} aria-label={`Eliminar movimiento ${t.description}`} title="Eliminar movimiento">{deletingId === t.id ? 'Eliminando…' : <Trash2 size={15} />}</button></div></td></tr>)}</tbody></table></div>
       {pageCount > 1 && <nav className="pagination" aria-label="Paginación de movimientos">
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visibleTransactions.length)} de {visibleTransactions.length}</span>
         <div className="pagination-controls">

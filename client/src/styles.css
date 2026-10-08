@@ -150,6 +150,14 @@
 .pagination-controls button:hover:not(:disabled){border-color:#28bd87;color:#16835e}
 .pagination-controls button:disabled{opacity:.5;cursor:default}
 .movement-notes{max-width:280px;white-space:normal;overflow-wrap:anywhere}
+.movement-actions{display:flex;align-items:center;gap:6px}
+.movement-actions .row-action{border:1px solid #e4e8ed;border-radius:6px;padding:6px 8px;white-space:nowrap}
+.movement-actions .delete-action{display:inline-flex;align-items:center;justify-content:center;color:#c45450}
+.movement-actions .delete-action:hover:not(:disabled){background:#fff2f1;border-color:#ffd5d1;color:#ad3834}
+.movement-actions .delete-action:disabled{opacity:.6;cursor:wait}
+.theme-dark .movement-actions .row-action{border-color:#34475d}
+.theme-dark .movement-actions .delete-action{color:#f08a85}
+.theme-dark .movement-actions .delete-action:hover:not(:disabled){background:#493032;border-color:#754248;color:#ffaaa5}
 .theme-dark .pagination{color:#9aa9ba}
 .theme-dark .pagination-controls button{border-color:#34475d;color:#dce6ef;background:#1d3044}
 .theme-dark .pagination-controls button:hover:not(:disabled){border-color:#55d5a6;color:#55d5a6}

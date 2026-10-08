@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import { pool } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
 
@@ -64,6 +64,17 @@ router.patch('/:id', rules, validate, async (req, res, next) => {
       [serviceId || null, type, description, normalizedUsd, normalizedCup, transactionDate || null, notes, req.params.id, req.user.id]);
     if (!rows[0]) return res.status(404).json({ message: 'Movimiento no encontrado.' });
     res.json({ transaction: rows[0] });
+  } catch (error) { next(error); }
+});
+
+router.delete('/:id', param('id').isInt({ min: 1 }).withMessage('ID de movimiento inválido.'), validate, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'DELETE FROM transactions WHERE id=$1 AND user_id=$2 RETURNING id',
+      [req.params.id, req.user.id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Movimiento no encontrado.' });
+    res.json({ message: 'Movimiento eliminado correctamente.' });
   } catch (error) { next(error); }
 });
 
