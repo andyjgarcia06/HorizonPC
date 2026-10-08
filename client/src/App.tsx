@@ -24,7 +24,7 @@ const dateLabel = (value: string) => new Date(`${value.split('T')[0]}T12:00:00`)
 
 function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
   const [register, setRegister] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', company: 'HorizonPC' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', company: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const submit = async (event: FormEvent) => {
@@ -51,7 +51,7 @@ function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
         <label>Contraseña<input type="password" required minLength={6} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 6 caracteres" /></label>
         <button className="primary-button full" disabled={loading}>{loading ? 'Procesando…' : register ? 'Crear cuenta' : 'Iniciar sesión'} <ArrowUpRight size={17} /></button>
       </form>
-      <p className="switch-auth">{register ? '¿Ya tienes una cuenta?' : '¿Aún no tienes una cuenta?'} <button onClick={() => { setRegister(!register); setError(''); }}> {register ? 'Inicia sesión' : 'Regístrate gratis'}</button></p>
+      <p className="switch-auth">{register ? '¿Ya tienes una cuenta?' : '¿Aún no tienes una cuenta?'} <button onClick={() => { setRegister(!register); setForm({ name: '', email: '', password: '', company: '' }); setError(''); }}> {register ? 'Inicia sesión' : 'Regístrate gratis'}</button></p>
     </div></section>
   </main>;
 }
