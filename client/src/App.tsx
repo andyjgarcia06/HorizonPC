@@ -101,6 +101,8 @@ function EmptyState({ text }: { text: string }) { return <div className="empty">
 function ServicesPage({ services, reload }: { services: Service[]; reload: () => void }) {
   const [show, setShow] = useState(false); const [editing, setEditing] = useState<Service | null>(null);
   const [sortBy, setSortBy] = useState('name-asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [form, setForm] = useState({ name: '', description: '', category: 'Consultoría', costUsd: '', costCup: '', status: 'Activo' }); const [error, setError] = useState('');
   // El ordenamiento es local para que cambiarlo sea inmediato y no modifique el catálogo guardado.
   const sortedServices = useMemo(() => {
@@ -113,10 +115,38 @@ function ServicesPage({ services, reload }: { services: Service[]; reload: () =>
       return (first - second) * multiplier;
     });
   }, [services, sortBy]);
+  const pageCount = Math.ceil(sortedServices.length / pageSize);
+  const visibleServices = sortedServices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const openForm = (service?: Service) => { setEditing(service || null); setForm(service ? { name: service.name, description: service.description || '', category: service.category, costUsd: String(service.costUsd), costCup: String(service.costCup), status: service.status } : { name: '', description: '', category: 'Consultoría', costUsd: '', costCup: '', status: 'Activo' }); setError(''); setShow(true); };
-  const save = async (e: FormEvent) => { e.preventDefault(); try { await api(`/services${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(form) }); setShow(false); reload(); } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar.'); } };
+  const save = async (e: FormEvent) => { e.preventDefault(); try { await api(`/services${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(form) }); setShow(false); if (!editing) setCurrentPage(1); reload(); } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo guardar.'); } };
   return <><div className="page-heading"><div><p className="eyebrow">CATÁLOGO</p><h1>Servicios</h1><p className="muted">Define y controla los servicios que ofrece tu negocio.</p></div><button className="primary-button" onClick={() => openForm()}><Plus size={17} /> Nuevo servicio</button></div>
-    <section className="panel table-panel"><div className="panel-heading"><div><h3>Todos los servicios</h3><p className="muted">{services.length} servicios registrados</p></div><div className="period-select service-sort"><span>Ordenar por</span><select aria-label="Ordenar catálogo de servicios" value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="name-asc">Nombre A-Z</option><option value="name-desc">Nombre Z-A</option><option value="usd-asc">Costo USD menor</option><option value="usd-desc">Costo USD mayor</option><option value="cup-asc">Costo CUP menor</option><option value="cup-desc">Costo CUP mayor</option></select><ChevronDown size={14} /></div></div>{services.length ? <div className="table-scroll"><table><thead><tr><th>Servicio</th><th>Categoría</th><th>Costo USD</th><th>Costo CUP</th><th>Estado</th><th /></tr></thead><tbody>{sortedServices.map(s => <tr key={s.id}><td><strong>{s.name}</strong><small>{s.description || 'Sin descripción'}</small></td><td>{s.category}</td><td>{usd(s.costUsd)}</td><td>{cup(s.costCup)}</td><td><span className={`status ${s.status === 'Activo' ? 'active' : 'inactive'}`}><i />{s.status}</span></td><td><button className="row-action" onClick={() => openForm(s)}>Editar</button></td></tr>)}</tbody></table></div> : <EmptyState text="Crea tu primer servicio para comenzar" />}</section>
+    <section className="panel table-panel">
+      <div className="panel-heading">
+        <div><h3>Todos los servicios</h3><p className="muted">{services.length} servicios registrados</p></div>
+        <div className="period-select service-sort">
+          <span>Ordenar por</span>
+          <select aria-label="Ordenar catálogo de servicios" value={sortBy} onChange={e => { setSortBy(e.target.value); setCurrentPage(1); }}>
+            <option value="name-asc">Nombre A-Z</option><option value="name-desc">Nombre Z-A</option>
+            <option value="usd-asc">Costo USD menor</option><option value="usd-desc">Costo USD mayor</option>
+            <option value="cup-asc">Costo CUP menor</option><option value="cup-desc">Costo CUP mayor</option>
+          </select>
+          <ChevronDown size={14} />
+        </div>
+      </div>
+      {services.length ? <>
+        <div className="table-scroll"><table><thead><tr><th>Servicio</th><th>Categoría</th><th>Costo USD</th><th>Costo CUP</th><th>Estado</th><th /></tr></thead>
+          <tbody>{visibleServices.map(s => <tr key={s.id}><td><strong>{s.name}</strong><small>{s.description || 'Sin descripción'}</small></td><td>{s.category}</td><td>{usd(s.costUsd)}</td><td>{cup(s.costCup)}</td><td><span className={`status ${s.status === 'Activo' ? 'active' : 'inactive'}`}><i />{s.status}</span></td><td><button className="row-action" onClick={() => openForm(s)}>Editar</button></td></tr>)}</tbody>
+        </table></div>
+        {pageCount > 1 && <nav className="pagination" aria-label="Paginación de servicios">
+          <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, services.length)} de {services.length}</span>
+          <div className="pagination-controls">
+            <button type="button" onClick={() => setCurrentPage(page => Math.max(1, page - 1))} disabled={currentPage === 1} aria-label="Página anterior">Anterior</button>
+            <span>Página {currentPage} de {pageCount}</span>
+            <button type="button" onClick={() => setCurrentPage(page => Math.min(pageCount, page + 1))} disabled={currentPage === pageCount} aria-label="Página siguiente">Siguiente</button>
+          </div>
+        </nav>}
+      </> : <EmptyState text="Crea tu primer servicio para comenzar" />}
+    </section>
     {show && <Modal title={editing ? 'Editar servicio' : 'Nuevo servicio'} close={() => setShow(false)}><form className="modal-form" onSubmit={save}>{error && <div className="alert">{error}</div>}<label>Nombre del servicio<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ej. Soporte técnico" /></label><label>Descripción<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Describe brevemente este servicio" /></label><div className="form-row"><label>Categoría<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}><option>Consultoría</option><option>Desarrollo</option><option>Soporte técnico</option><option>Infraestructura</option><option>Seguridad</option></select></label><label>Estado<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option>Activo</option><option>Inactivo</option></select></label></div><div className="form-row"><label>Costo USD<input type="number" min="0" step=".01" value={form.costUsd} onChange={e => setForm({ ...form, costUsd: e.target.value })} placeholder="0.00" /></label><label>Costo CUP<input type="number" min="0" step=".01" value={form.costCup} onChange={e => setForm({ ...form, costCup: e.target.value })} placeholder="0.00" /></label></div><button className="primary-button full">Guardar servicio</button></form></Modal>}
   </>;
 }

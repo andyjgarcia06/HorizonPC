@@ -144,6 +144,15 @@
 .theme-option{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #dce2e9;background:#fff;color:#536274;border-radius:8px;padding:12px;font-size:12px;font-weight:600}
 .theme-option:hover{border-color:#3ac896}
 .theme-option.selected{background:#e8f8f2;border-color:#28bd87;color:#16835e}
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;color:#788597;font-size:12px}
+.pagination-controls{display:flex;align-items:center;gap:12px}
+.pagination-controls button{border:1px solid #e4e8ed;border-radius:6px;padding:6px 10px;color:#344357;font-size:12px;font-weight:600}
+.pagination-controls button:hover:not(:disabled){border-color:#28bd87;color:#16835e}
+.pagination-controls button:disabled{opacity:.5;cursor:default}
+.theme-dark .pagination{color:#9aa9ba}
+.theme-dark .pagination-controls button{border-color:#34475d;color:#dce6ef;background:#1d3044}
+.theme-dark .pagination-controls button:hover:not(:disabled){border-color:#55d5a6;color:#55d5a6}
+@media(max-width:520px){.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:space-between;gap:8px}}
 @media print{
   @page{size:A4;margin:14mm}
   body{background:#fff}
