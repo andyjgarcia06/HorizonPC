@@ -26,6 +26,14 @@ if (process.env.NODE_ENV === 'production' && configuredClientUrls.length === 0) 
   throw new Error('CLIENT_URL es obligatorio en producción.');
 }
 
+if (process.env.NODE_ENV === 'production') {
+  for (const key of ['TURNSTILE_SECRET_KEY', 'RESEND_API_KEY', 'EMAIL_FROM']) {
+    if (!process.env[key]?.trim()) {
+      throw new Error(`${key} es obligatoria en producción para el registro con verificación.`);
+    }
+  }
+}
+
 export const clientOrigins = new Set(
   (configuredClientUrls.length ? configuredClientUrls : ['http://localhost:5173']).map((value) => {
     let url;

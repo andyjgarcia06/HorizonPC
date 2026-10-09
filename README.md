@@ -36,6 +36,10 @@ Para desarrollo local, configura `JWT_SECRET` con una clave aleatoria de al meno
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
+El registro usa Cloudflare Turnstile y Resend. Configura `VITE_TURNSTILE_SITE_KEY` en `client/.env` con la clave pública del widget, y `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY` y `EMAIL_FROM` en `server/.env`. En Cloudflare, permite los dominios del frontend (incluido `localhost` para desarrollo); en Resend, verifica el dominio/remitente usado en `EMAIL_FROM`.
+
+Para la base de datos que ya está desplegada en Supabase, ejecuta una vez el SQL de `server/src/db/migrations/001_email_verification.sql` en Supabase Dashboard > SQL Editor antes de desplegar la API. Los usuarios existentes se marcan como verificados; las nuevas cuentas deberán verificar su correo antes de iniciar sesión. El esquema nuevo también incluye las columnas en `server/src/db/schema.sql`.
+
 ## Despliegue del backend en Render
 
 El archivo `render.yaml` configura el servicio web del backend con `server` como directorio raíz, `npm ci` como comando de compilación, `npm start` como comando de inicio y `/api/health` como health check. Crea el Blueprint en Render desde el repositorio y completa estas variables secretas/privadas cuando Render las solicite:
@@ -43,10 +47,13 @@ El archivo `render.yaml` configura el servicio web del backend con `server` como
 - `DATABASE_URL`: cadena de conexión del pooler de Supabase.
 - `JWT_SECRET`: Render genera y conserva un valor aleatorio seguro al crear el Blueprint. No lo incluyas en Git.
 - `CLIENT_URL`: origen HTTPS exacto del frontend desplegado. Se admiten varios orígenes separados por comas.
+- `TURNSTILE_SECRET_KEY`: clave secreta del widget de Cloudflare Turnstile.
+- `RESEND_API_KEY`: API key secreta de Resend.
+- `EMAIL_FROM`: remitente verificado en Resend, por ejemplo `Horizon Finanzas <cuentas@tu-dominio.com>`.
 
 El certificado de Supabase se incluye en el repositorio en `server/certs/prod-ca-2021.crt`; el Blueprint configura la ruta `DB_SSL_CA`. Render asigna `PORT` automáticamente. El health check prueba la conexión a PostgreSQL además de que la API esté levantada.
 
-Despliega el frontend por separado y define `VITE_API_URL` durante su build con la URL pública de la API terminada en `/api` (por ejemplo, `https://horizonpc-api.onrender.com/api`). A su vez, configura `CLIENT_URL` en el servicio de backend con el origen público del frontend, sin `/api` ni rutas.
+En un servicio Render ya creado, agrega manualmente las variables nuevas desde **Environment**; Render no vuelve a pedir valores `sync: false` al sincronizar un Blueprint existente. Despliega el frontend por separado y define `VITE_API_URL` durante su build con la URL pública de la API terminada en `/api` (por ejemplo, `https://horizonpc-api.onrender.com/api`) y `VITE_TURNSTILE_SITE_KEY` con la clave pública del widget. Vercel necesita un nuevo deploy después de configurar esas variables. A su vez, configura `CLIENT_URL` en el servicio de backend con el origen público del frontend, sin `/api` ni rutas.
 
 `DATABASE_URL` tiene prioridad sobre las variables individuales (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`). El backend exige un `JWT_SECRET` fuerte y `CLIENT_URL` en producción; también limita a 10 los intentos combinados de inicio de sesión/registro por IP cada 15 minutos. El limitador usa memoria local, por lo que al escalar a varias instancias se recomienda configurarle un almacén compartido.
 
@@ -55,6 +62,7 @@ El backend activa TLS y verifica el certificado raíz indicado por `DB_SSL_CA` p
 ## API principal
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
+- `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`
 - `PATCH /api/auth/profile` (requiere contraseña actual para confirmar los cambios)
 - `GET|POST|PATCH /api/services`
 - `GET|POST /api/transactions`
