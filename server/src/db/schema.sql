@@ -4,15 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(180) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   company VARCHAR(180) DEFAULT 'HorizonPC',
-  email_verified BOOLEAN NOT NULL DEFAULT TRUE,
-  email_verification_token_hash TEXT,
-  email_verification_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;
 
 -- Permite conservar la tasa de cambio definida por cada cuenta.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS exchange_rate_cup NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (exchange_rate_cup >= 0);
@@ -49,6 +42,3 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS services_user_idx ON services(user_id);
 CREATE INDEX IF NOT EXISTS transactions_user_date_idx ON transactions(user_id, transaction_date DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_verification_token_idx
-  ON users(email_verification_token_hash)
-  WHERE email_verification_token_hash IS NOT NULL;

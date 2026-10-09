@@ -76,20 +76,18 @@ function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', company: '' });
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
-  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const submit = async (event: FormEvent) => {
-    event.preventDefault(); setError(''); setMessage('');
+    event.preventDefault(); setError('');
     if (register && !turnstileSiteKey) { setError('La verificación anti-bots no está configurada.'); return; }
     if (register && !captchaToken) { setError('Completa la verificación anti-bots antes de continuar.'); return; }
     setLoading(true);
     try {
       if (register) {
-        const result = await postJson<{ message: string }>('/auth/register', { ...form, captchaToken });
-        setMessage(result.message);
-        setRegister(false);
+        const data = await postJson<{ token: string; user: User }>('/auth/register', { ...form, captchaToken });
+        onAuth(data.token, data.user);
         setForm({ name: '', email: '', password: '', company: '' });
       } else {
         const data = await postJson<{ token: string; user: User }>('/auth/login', form);
@@ -112,7 +110,6 @@ function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
     <section className="auth-form-wrap"><div className="auth-form">
       <div className="mobile-brand brand"><span className="brand-mark"><Zap size={18} fill="currentColor" /></span> Horizon<span> Finanzas</span></div>
       <p className="eyebrow">BIENVENIDO A HORIZON FINANZAS</p><h2>{register ? 'Crea tu cuenta' : 'Qué bueno verte'}</h2><p className="muted">{register ? 'Empieza a organizar tus finanzas hoy.' : 'Ingresa para continuar con tu gestión financiera.'}</p>
-      {message && <div className="success-alert" role="status">{message}</div>}
       {error && <div className="alert" role="alert">{error}</div>}
       <form onSubmit={submit}>
         {register && <label>Nombre completo<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Tu nombre" /></label>}
@@ -122,82 +119,7 @@ function AuthPage({ onAuth }: { onAuth: (token: string, user: User) => void }) {
         {register && turnstileSiteKey && <TurnstileWidget key={captchaResetKey} siteKey={turnstileSiteKey} onToken={setCaptchaToken} />}
         <button className="primary-button full" disabled={loading || (register && (!turnstileSiteKey || !captchaToken))}>{loading ? 'Procesando…' : register ? 'Crear cuenta' : 'Iniciar sesión'} <ArrowUpRight size={17} /></button>
       </form>
-      <p className="switch-auth">{register ? '¿Ya tienes una cuenta?' : '¿Aún no tienes una cuenta?'} <button onClick={() => { setRegister(!register); setForm({ name: '', email: '', password: '', company: '' }); setCaptchaToken(''); setMessage(''); setError(''); }}> {register ? 'Inicia sesión' : 'Regístrate gratis'}</button></p>
-    </div></section>
-  </main>;
-}
-
-function VerifyEmailPage({ token, onBack }: { token: string; onBack: () => void }) {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Verificando el enlace…');
-  const [email, setEmail] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
-  const [captchaResetKey, setCaptchaResetKey] = useState(0);
-  const [resendMessage, setResendMessage] = useState('');
-  const [resendError, setResendError] = useState('');
-  const [resending, setResending] = useState(false);
-  const started = useRef(false);
-  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    window.history.replaceState({}, '', window.location.pathname);
-    api<{ message: string }>('/auth/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({ token })
-    }).then(result => {
-      setStatus('success');
-      setMessage(result.message);
-    }).catch(error => {
-      setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'No se pudo verificar el correo.');
-    });
-  }, [token]);
-
-  const resendVerification = async (event: FormEvent) => {
-    event.preventDefault();
-    setResendMessage('');
-    setResendError('');
-    if (!turnstileSiteKey) {
-      setResendError('La verificación anti-bots no está configurada.');
-      return;
-    }
-    if (!captchaToken) {
-      setResendError('Completa la verificación anti-bots antes de continuar.');
-      return;
-    }
-    setResending(true);
-    try {
-      const result = await postJson<{ message: string }>('/auth/resend-verification', { email, captchaToken });
-      setResendMessage(result.message);
-    } catch (error) {
-      setResendError(error instanceof Error ? error.message : 'No se pudo solicitar otro enlace.');
-    } finally {
-      setResending(false);
-      setCaptchaToken('');
-      setCaptchaResetKey(key => key + 1);
-    }
-  };
-
-  return <main className="auth-page">
-    <section className="auth-visual">
-      <div className="brand"><span className="brand-mark"><Zap size={20} fill="currentColor" /></span> Horizon<span> Finanzas</span></div>
-      <div className="visual-copy"><p className="eyebrow">VERIFICACIÓN DE CUENTA</p><h1>Un paso más<br /><em>y comenzamos.</em></h1><p>Confirma tu correo para proteger el acceso a tu cuenta.</p></div>
-      <div className="visual-footer"><ShieldCheck size={16} /> Tus datos están protegidos con seguridad empresarial</div>
-    </section>
-    <section className="auth-form-wrap"><div className="auth-form">
-      <p className="eyebrow">HORIZON FINANZAS</p>
-      <h2>{status === 'loading' ? 'Verificando correo' : status === 'success' ? 'Correo confirmado' : 'No se pudo confirmar'}</h2>
-      {status === 'loading' ? <div className="loading"><div className="spinner" />{message}</div> : status === 'success' ? <div className="success-alert" role="status">{message}</div> : <div className="alert" role="alert">{message}</div>}
-      {status === 'error' && <form onSubmit={resendVerification}>
-        {resendMessage && <div className="success-alert" role="status">{resendMessage}</div>}
-        {resendError && <div className="alert" role="alert">{resendError}</div>}
-        <label>Correo electrónico<input type="email" required value={email} onChange={event => setEmail(event.target.value)} placeholder="nombre@empresa.com" /></label>
-        {turnstileSiteKey && <TurnstileWidget key={captchaResetKey} siteKey={turnstileSiteKey} onToken={setCaptchaToken} />}
-        <button className="primary-button full" disabled={resending || !turnstileSiteKey || !captchaToken}>{resending ? 'Enviando…' : 'Solicitar otro enlace'}</button>
-      </form>}
-      {status !== 'loading' && <button className="primary-button full" onClick={onBack}>Volver al inicio de sesión</button>}
+      <p className="switch-auth">{register ? '¿Ya tienes una cuenta?' : '¿Aún no tienes una cuenta?'} <button onClick={() => { setRegister(!register); setForm({ name: '', email: '', password: '', company: '' }); setCaptchaToken(''); setError(''); }}> {register ? 'Inicia sesión' : 'Regístrate gratis'}</button></p>
     </div></section>
   </main>;
 }
@@ -429,7 +351,6 @@ function Modal({ title, close, children }: { title: string; close: () => void; c
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null); const [page, setPage] = useState<Page>('Dashboard'); const [data, setData] = useState<DashboardData | null>(null); const [services, setServices] = useState<Service[]>([]); const [transactions, setTransactions] = useState<Transaction[]>([]); const [loading, setLoading] = useState(true);
-  const [emailVerificationToken, setEmailVerificationToken] = useState<string | null>(() => new URLSearchParams(window.location.search).get('verify-email'));
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => localStorage.getItem('horizon_theme') === 'dark' ? 'dark' : 'light');
   const setTheme = (nextTheme: 'light' | 'dark') => { setThemeState(nextTheme); localStorage.setItem('horizon_theme', nextTheme); };
   useEffect(() => { const saved = localStorage.getItem('horizon_user'); const token = localStorage.getItem('horizon_token'); if (saved && token) setUser(JSON.parse(saved)); else setLoading(false); }, []);
@@ -445,9 +366,6 @@ export default function App() {
     if (page === 'TipoCambio') return <ExchangeRatePage />;
     return <SettingsPage user={user!} theme={theme} setTheme={setTheme} onAccountUpdated={login} />;
   }, [page, data, loading, services, transactions, user, theme]);
-  if (emailVerificationToken) {
-    return <VerifyEmailPage token={emailVerificationToken} onBack={() => setEmailVerificationToken(null)} />;
-  }
   if (!user) return <AuthPage onAuth={login} />;
   return <AuthContext.Provider value={{ user, login, logout }}><div className={`theme-${theme}`}><Layout user={user} page={page} setPage={setPage} onLogout={logout}>{content}</Layout></div></AuthContext.Provider>;
 }

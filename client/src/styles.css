@@ -159,7 +159,6 @@
 .theme-dark .movement-actions .delete-action{color:#f08a85}
 .theme-dark .movement-actions .delete-action:hover:not(:disabled){background:#493032;border-color:#754248;color:#ffaaa5}
 .turnstile-widget{display:flex;justify-content:center;margin:0 0 18px;min-height:65px}
-.auth-form .success-alert{margin:16px 0}
 .theme-dark .pagination{color:#9aa9ba}
 .theme-dark .pagination-controls button{border-color:#34475d;color:#dce6ef;background:#1d3044}
 .theme-dark .pagination-controls button:hover:not(:disabled){border-color:#55d5a6;color:#55d5a6}
