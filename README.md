@@ -36,7 +36,7 @@ Para desarrollo local, configura `JWT_SECRET` con una clave aleatoria de al meno
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-El registro protege contra bots con Cloudflare Turnstile. Configura `VITE_TURNSTILE_SITE_KEY` en `client/.env` con la clave pública del widget y `TURNSTILE_SECRET_KEY` en `server/.env` con la clave secreta. En Cloudflare, permite los dominios del frontend (incluido `localhost` para desarrollo). Tras registrarse correctamente, la cuenta inicia sesión automáticamente; no se envía correo de verificación. No se necesita una migración de base de datos; si la base conserva columnas de una versión anterior para verificación de correo, la aplicación ya no las utiliza.
+El registro protege contra bots con Cloudflare Turnstile. Configura `VITE_TURNSTILE_SITE_KEY` en `client/.env` con la clave pública del widget y `TURNSTILE_SECRET_KEY` en `server/.env` con la clave secreta. En la configuración del widget de Cloudflare, permite los dominios del frontend (incluido `localhost` para desarrollo). El backend valida el token de Turnstile antes de crear la cuenta. Al registrarse correctamente, la sesión se inicia automáticamente; el correo se utiliza como identificador de inicio de sesión y no se envía ningún mensaje de confirmación.
 
 ## Despliegue del backend en Render
 
@@ -49,7 +49,7 @@ El archivo `render.yaml` configura el servicio web del backend con `server` como
 
 El certificado de Supabase se incluye en el repositorio en `server/certs/prod-ca-2021.crt`; el Blueprint configura la ruta `DB_SSL_CA`. Render asigna `PORT` automáticamente. El health check prueba la conexión a PostgreSQL además de que la API esté levantada.
 
-En un servicio Render ya creado, conserva `TURNSTILE_SECRET_KEY` y elimina, si las habías agregado, las variables `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `RESEND_API_KEY` y `EMAIL_FROM`, que ya no se usan. Despliega el frontend por separado y define `VITE_API_URL` durante su build con la URL pública de la API terminada en `/api` (por ejemplo, `https://horizonpc-api.onrender.com/api`) y `VITE_TURNSTILE_SITE_KEY` con la clave pública del widget. Vercel necesita un nuevo deploy después de configurar esas variables. A su vez, configura `CLIENT_URL` en el servicio de backend con el origen público del frontend, sin `/api` ni rutas.
+En un servicio Render ya creado, verifica que `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL` y `TURNSTILE_SECRET_KEY` estén configuradas. Despliega el frontend por separado y define `VITE_API_URL` durante su build con la URL pública de la API terminada en `/api` (por ejemplo, `https://horizonpc-api.onrender.com/api`) y `VITE_TURNSTILE_SITE_KEY` con la clave pública del widget. Vuelve a desplegar Vercel después de configurar esas variables. `CLIENT_URL` en Render debe ser el origen público del frontend, sin `/api` ni rutas.
 
 `DATABASE_URL` tiene prioridad sobre las variables individuales (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`). El backend exige un `JWT_SECRET` fuerte y `CLIENT_URL` en producción; también limita a 10 los intentos combinados de inicio de sesión/registro por IP cada 15 minutos. El limitador usa memoria local, por lo que al escalar a varias instancias se recomienda configurarle un almacén compartido.
 
