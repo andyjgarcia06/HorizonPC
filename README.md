@@ -55,6 +55,7 @@ El backend activa TLS y verifica el certificado raíz indicado por `DB_SSL_CA` p
 ## API principal
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
+- `PATCH /api/auth/profile` (requiere contraseña actual para confirmar los cambios)
 - `GET|POST|PATCH /api/services`
 - `GET|POST /api/transactions`
 - `GET /api/dashboard`
